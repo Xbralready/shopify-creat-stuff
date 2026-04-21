@@ -15,7 +15,7 @@ const CONFIG = {
   shopifyStore: process.env.SHOPIFY_STORE || 'angedodge.myshopify.com',
   shopifyToken: process.env.SHOPIFY_TOKEN || '',
   shopifyApiVersion: '2026-04',
-  openaiApiKey: process.env.OPENAI_API_KEY || '',
+  openaiApiKey: (process.env.OPENAI_API_KEY || '').trim(),
   // 走量定价: RMB / 汇率 * 倍率
   exchangeRate: 7.25,
   priceMultiplier: 0.75, // 走量策略，约等于 RMB/7.25 * 0.75 → ~$60-70 for ¥598
