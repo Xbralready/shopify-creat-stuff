@@ -4,6 +4,19 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
+const LOG_FILE = path.join(__dirname, 'products-log.json');
+
+function readLog() {
+  if (!fs.existsSync(LOG_FILE)) return [];
+  try { return JSON.parse(fs.readFileSync(LOG_FILE, 'utf8')); } catch { return []; }
+}
+
+function writeLog(entry) {
+  const log = readLog();
+  log.push(entry);
+  fs.writeFileSync(LOG_FILE, JSON.stringify(log, null, 2), 'utf8');
+}
+
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -355,6 +368,22 @@ app.post('/api/upload', upload.array('images', 20), async (req, res) => {
 
     console.log(`✅ Product created! ID: ${product.id}`);
 
+    // 写入台账
+    writeLog({
+      id: product.id,
+      title: product.title,
+      title_cn: productInfo.title_cn || '',
+      price_rmb: productInfo.price_rmb || '',
+      price_usd: product.variants[0]?.price || '',
+      colors: productInfo.colors_en || [],
+      sizes: productInfo.sizes || [],
+      status: product.status,
+      variants: product.variants.length,
+      images: product.images.length,
+      uploaded_at: new Date().toISOString(),
+      shopify_url: `https://admin.shopify.com/store/angedodge/products/${product.id}`,
+    });
+
     // Cleanup uploaded files
     for (const f of (req.files || [])) {
       fs.unlink(f.path, () => {});
@@ -375,6 +404,11 @@ app.post('/api/upload', upload.array('images', 20), async (req, res) => {
     console.error('❌ Upload error:', error.message);
     res.status(500).json({ error: error.message });
   }
+});
+
+// 查询台账
+app.get('/api/products', (req, res) => {
+  res.json(readLog());
 });
 
 // ============================================================
