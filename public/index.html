@@ -78,6 +78,25 @@
 
     .actions { display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end; }
 
+    .nav-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: white; padding: 6px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); width: fit-content; }
+    .nav-tab { padding: 10px 24px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; background: transparent; color: #888; transition: all 0.2s; }
+    .nav-tab.active { background: #10b981; color: white; }
+    .nav-tab:hover:not(.active) { background: #f0fdf4; color: #10b981; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .log-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .log-table th { text-align: left; padding: 10px 14px; background: #f9fafb; color: #888; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; }
+    .log-table td { padding: 12px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    .log-table tr:hover td { background: #f9fafb; }
+    .log-table a { color: #10b981; text-decoration: none; font-weight: 600; }
+    .log-table a:hover { text-decoration: underline; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-draft { background: #fef3c7; color: #d97706; }
+    .badge-active { background: #d1fae5; color: #065f46; }
+    .log-empty { text-align: center; padding: 60px; color: #aaa; }
+
     @media (max-width: 768px) {
       .steps { flex-direction: column; }
       .product-preview { grid-template-columns: 1fr; }
@@ -91,6 +110,15 @@
   </div>
 
   <div class="container">
+    <!-- Nav Tabs -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('upload')">上架商品</button>
+      <button class="nav-tab" onclick="switchTab('log')">已上架记录</button>
+    </div>
+
+    <!-- Tab: Upload -->
+    <div class="tab-content active" id="tab-upload">
+
     <!-- Steps indicator -->
     <div class="steps">
       <div class="step active" id="step1-indicator">
@@ -230,6 +258,22 @@
         </div>
       </div>
     </div>
+
+    </div> <!-- /tab-upload -->
+
+    <!-- Tab: Log -->
+    <div class="tab-content" id="tab-log">
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+          <h2 style="margin:0;">已上架商品记录</h2>
+          <button class="btn btn-secondary" onclick="loadLog()" style="padding:8px 18px; font-size:13px;">刷新</button>
+        </div>
+        <div id="logContent">
+          <div class="log-empty">加载中...</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -377,11 +421,61 @@
           `${data.product.variants} 个变体 · ${data.product.images} 张图片 · 状态: 草稿`;
         document.getElementById('shopifyLink').href = data.product.url;
 
+        loadLog();
         goToStep(4);
       } catch (error) {
         document.getElementById('loadingCard').style.display = 'none';
         document.getElementById('step3').style.display = 'block';
         alert('上架失败: ' + error.message);
+      }
+    }
+
+    // ── Tab Switch ──
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-tab').forEach((el, i) => {
+        el.classList.toggle('active', (i === 0 && tab === 'upload') || (i === 1 && tab === 'log'));
+      });
+      document.getElementById('tab-upload').classList.toggle('active', tab === 'upload');
+      document.getElementById('tab-log').classList.toggle('active', tab === 'log');
+      if (tab === 'log') loadLog();
+    }
+
+    // ── Log ──
+    async function loadLog() {
+      const container = document.getElementById('logContent');
+      try {
+        const res = await fetch('/api/products');
+        const data = await res.json();
+        if (!data.length) {
+          container.innerHTML = '<div class="log-empty">暂无记录，上架第一个商品后会显示在这里</div>';
+          return;
+        }
+        const rows = [...data].reverse().map(p => {
+          const date = new Date(p.uploaded_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+          const badge = p.status === 'active'
+            ? '<span class="badge badge-active">已发布</span>'
+            : '<span class="badge badge-draft">草稿</span>';
+          return `<tr>
+            <td>${date}</td>
+            <td>
+              <div style="font-weight:600;">${p.title}</div>
+              <div style="color:#aaa;font-size:12px;margin-top:2px;">${p.title_cn || ''}</div>
+            </td>
+            <td>$${p.price_usd}<br><span style="color:#aaa;font-size:12px;">¥${p.price_rmb}</span></td>
+            <td>${(p.colors || []).join(', ')}</td>
+            <td>${(p.sizes || []).join(', ')}</td>
+            <td>${badge}</td>
+            <td><a href="${p.shopify_url}" target="_blank">后台查看 →</a></td>
+          </tr>`;
+        }).join('');
+        container.innerHTML = `<table class="log-table">
+          <thead><tr>
+            <th>上架时间</th><th>商品名称</th><th>售价</th><th>颜色</th><th>尺码</th><th>状态</th><th>链接</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+      } catch {
+        container.innerHTML = '<div class="log-empty">加载失败，请刷新重试</div>';
       }
     }
 
