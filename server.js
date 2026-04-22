@@ -135,7 +135,7 @@ async function analyzeMultipleScreenshots(imagePaths) {
 {
   "title_cn": "中文标题",
   "title_en": "English title optimized for US market SEO (under 70 chars)",
-  "description_en": "Detailed English product description in HTML format. Include: <h2> main title, <h3> sections for Features, Size Guide (as <table>), Material & Care, Styling Suggestions, FAQ. Make it GEO-optimized with specific numbers and facts.",
+  "description_en": "Detailed English product description in HTML format. Include: <h2> main title, <h3> sections for Features, Size Guide (as <table>), Material & Care, Styling Suggestions, FAQ. Make it GEO-optimized with specific numbers and facts. In the FAQ section, use exactly this shipping info: Processing time: 1-3 business days. Delivery to US: 6-12 business days (via YunExpress international shipping).",
   "price_rmb": 数字(不含¥符号),
   "colors_cn": ["颜色1", "颜色2"],
   "colors_en": ["Color1", "Color2"],
